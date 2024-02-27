@@ -4,8 +4,15 @@ import Header from "./components/Header";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { db } from "./firebse";
+
 const formSchema = z.object({
   movieName: z.string().min(3).max(30),
   songName: z.string().min(3).max(50),
@@ -22,29 +29,43 @@ function App() {
     resolver: zodResolver(formSchema),
   });
 
-  const [song, setSong] = useState([]);
+  const [songs, setSongs] = useState([]);
 
   const SONG_COLLECTION = "songsList";
   const sendThistoServer = async (data) => {
-    // console.log(data);
     try {
       const docRef = await addDoc(collection(db, SONG_COLLECTION), data);
       console.log("Document written with ID:", docRef.id);
-      alert("Your Favourite Song Added...!");
+      alert(
+        "Your Favourite Song Added...! Refresh the page to get your song 😉"
+      );
     } catch (e) {
       console.error("Error adding document:", e);
     }
     reset();
   };
 
+  const deleteSong = async (id) => {
+    const confirmation = window.confirm(
+      "Are you sure you want to delete this song?"
+    );
+    if (confirmation) {
+      try {
+        await deleteDoc(doc(db, SONG_COLLECTION, id));
+        console.log("Document successfully deleted!");
+        setSongs((prevSongs) => prevSongs.filter((song) => song.id !== id));
+      } catch (e) {
+        console.error("Error deleting document:", e);
+      }
+    }
+  };
+
   useEffect(() => {
     async function getDataFromFirebase() {
       const querySnapshot = await getDocs(collection(db, SONG_COLLECTION));
-      // console.log(querySnapshot.docs[0].data());
-      setSong(querySnapshot.docs.map((doc) => doc.data()));
-      querySnapshot.forEach((doc) => {
-        //   console.log(`${doc.id} => ${doc.data()}`, doc.data());
-      });
+      setSongs(
+        querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
 
       if (querySnapshot.docs.length === 0) {
         alert("No Record Found");
@@ -52,14 +73,25 @@ function App() {
     }
     getDataFromFirebase();
   }, []);
+
   return (
     <>
       <Header />
       <form
         action=""
         onSubmit={handleSubmit(sendThistoServer)}
-        className="max-w-2xl p-5 space-y-5 mx-auto bg-blue-300 mt-4 rounded-md mb-4"
+        className="max-w-5xl p-5 space-y-5 mx-auto bg-blue-300 mt-4 rounded-md mb-4 "
       >
+        <div className="flex items-center space-x-4">
+          <img
+            src="https://cdn.pixabay.com/photo/2021/11/25/05/20/cloud-storage-6822673_1280.png"
+            alt=""
+            className="w-20"
+          />
+          <p className="text-teal-800 font-semibold">
+            Upload your favourite songs in cloud database...
+          </p>
+        </div>
         <div className="space-y-2">
           <label htmlFor="movieName" className="text-xl font-semibold">
             Enter your movie name
@@ -97,14 +129,14 @@ function App() {
           />
         </div>
         <div className="text-center">
-          <button className="bg-blue-400 hover:bg-blue-500 hover:text-white p-3 rounded-lg font-medium">
-            Submit
+          <button className="bg-teal-600 hover:bg-blue-500 hover:text-black p-3 rounded-lg font-semibold ">
+            Upload Song
           </button>
         </div>
       </form>
       <section>
         <div className="relative overflow-x-auto shadow-md sm:rounded-lg w-full">
-          <table className=" sm:max-w-2xl mx-auto text-sm text-left rtl:text-right text-blue-100 dark:text-blue-100 ">
+          <table className="  mx-auto text-sm text-left rtl:text-right text-blue-100 dark:text-blue-100 ">
             <thead className="text-xs text-white uppercase bg-blue-600 dark:text-white">
               <tr>
                 <th scope="col" className="px-6 py-3">
@@ -123,31 +155,30 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {song.map((songs, index) => (
+              {songs.map((song) => (
                 <tr
-                  key={index}
+                  key={song.id}
                   className="bg-blue-500 border-b border-blue-400"
                 >
                   <th
                     scope="row"
                     className="px-6 py-4 font-medium text-blue-50 whitespace-nowrap dark:text-blue-100"
                   >
-                    {songs.movieName}
+                    {song.movieName}
                   </th>
-                  <td className="px-6 py-4">{songs.songName}</td>
+                  <td className="px-6 py-4">{song.songName}</td>
                   <td className="px-6 py-4">
-                    <a href={songs.yt_url} target="blank">
-                      {songs.yt_url}
+                    <a href={song.yt_url} target="blank">
+                      {song.yt_url}
                     </a>
                   </td>
-
                   <td className="px-6 py-4">
-                    <a
-                      href="#"
+                    <button
+                      onClick={() => deleteSong(song.id)}
                       className="font-medium text-white hover:underline"
                     >
-                      Edit
-                    </a>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

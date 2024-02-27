@@ -18,7 +18,10 @@ const Header = () => {
           >
             Home
           </a>
-          <a href="#" target="blank">
+          <a
+            href="https://github.com/dineshdevelope/SongListingApp"
+            target="blank"
+          >
             <img
               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbJtwnGnsGI34PgVFkw6QA1WaCfPdt_GxVzQ&usqp=CAU"
               alt="GitHub-Icon"
